@@ -1,11 +1,10 @@
 {
-  "name": "ingest-clothing",
+  "name": "ingest-outfit",
   "description": "",
   "version": "",
   "dependencies": {
     "@suborbital/runnable": "^0.15.1",
-    "fastestsmallesttextencoderdecoder-encodeinto": "^1.0.22",
-    "uuid": "^9.0.0"
+    "fastestsmallesttextencoderdecoder-encodeinto": "^1.0.22"
   },
   "devDependencies": {
     "webpack": "^5.38.1",
@@ -13,6 +12,6 @@
   },
   "scripts": {
     "prebuild": "webpack",
-    "build": "javy build/index.js -o ingest-clothing.wasm"
+    "build": "javy build/index.js -o ingest-outfit.wasm"
   }
 }

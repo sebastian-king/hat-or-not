@@ -1,0 +1,6 @@
+name: ingest-outfit
+namespace: default
+lang: javascript
+version: ""
+apiVersion: 0.15.1
+fqfnUri: ""

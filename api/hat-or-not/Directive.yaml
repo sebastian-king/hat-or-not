@@ -13,3 +13,9 @@ handlers:
     method: POST
     steps:
       - fn: ingest-clothing
+
+  - type: request
+    resource: /ingest/outfit
+    method: POST
+    steps:
+      - fn: ingest-outfit
