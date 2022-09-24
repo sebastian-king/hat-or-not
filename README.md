@@ -1,1 +1,3 @@
-# hat-or-not
+# hat OR not project
+
+A hardware hack for HackDFW
