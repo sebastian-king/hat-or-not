@@ -8,6 +8,17 @@ import numpy as np
 clicked = False
 r = g= b = xpos = ypos = 0
 
+def histogram_equalization(image):
+    img_y_cr_cb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+    y, cr, cb = cv2.split(img_y_cr_cb)
+
+    # Applying equalize Hist operation on Y channel.
+    y_eq = cv2.equalizeHist(y)
+
+    img_y_cr_cb_eq = cv2.merge((y_eq, cr, cb))
+    img_rgb_eq = cv2.cvtColor(img_y_cr_cb_eq, cv2.COLOR_YCR_CB2BGR)
+    return img_rgb_eq
+    
 def draw_function(event, x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDOWN:
         global b,g,r,xpos,ypos, clicked
@@ -34,7 +45,7 @@ args = vars(ap.parse_args())
 img_path = args['image']
 #Reading image with opencv
 img = cv2.imread(img_path)
-
+img = histogram_equalization(img)
 #Reading csv file with pandas and giving names to each column
 index=["color","color_name","hex","R","G","B"]
 csv = pd.read_csv(os.path.join(os.getcwd(),'colors.csv'), names=index, header=None)
