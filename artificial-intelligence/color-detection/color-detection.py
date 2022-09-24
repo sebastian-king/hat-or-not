@@ -30,9 +30,9 @@ def getColorName(R,G,B,csv):
 
     return cname, chex
 
-def colorDetection(img):
+def colorDetection(args, img):
 	if args['live']:
-            img = histogram_equalization(img)
+        img = histogram_equalization(img)
 
 	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 	plt.imshow(img)
@@ -69,10 +69,10 @@ if args['serve']:
 		data: bytes = await request.body()
 		bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
 		img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
-		return colorDetection(img)
+		return colorDetection(args, img)
 
 	uvicorn.run(app, host="0.0.0.0", port=8081)
 else:
 	#Reading image with opencv
 	img = cv2.imread(img_path)
-	colorDetection(img);
+	colorDetection(args, img);
