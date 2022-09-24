@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 import cv2
 import os
+import matplotlib.pyplot as plt
 
 def histogram_equalization(image):
     img_y_cr_cb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
@@ -21,15 +22,24 @@ def getColorName(R,G,B):
         if(d<=minimum):
             minimum = d
             cname = csv.loc[i,"color_name"]
-    return cname
+            chex = csv.loc[i,"hex"]
+            
+    return cname, chex
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True, help="Image Path")
+ap.add_argument('-live', '--live', action='store_true')
+
 args = vars(ap.parse_args())
 img_path = args['image']
 #Reading image with opencv
 img = cv2.imread(img_path)
-img = histogram_equalization(img)
+if args['live']:
+    img = histogram_equalization(img)
+    
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+plt.imshow(img)
+plt.show()
 #Reading csv file with pandas and giving names to each column
 index=["color","color_name","hex","R","G","B"]
 csv = pd.read_csv(os.path.join(os.getcwd(),'colors.csv'), names=index, header=None)
@@ -38,7 +48,7 @@ width = img.shape[1]
 height = img.shape[0]
 ypos = int(height/2)
 xpos = int(width/2)
-b,g,r = img[ypos,xpos]
-text = getColorName(r,g,b) + ' Color'#+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
-print(text)
+r,g,b = img[ypos,xpos]
+color, hex = getColorName(r,g,b) #+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
+print(color, hex)
     
