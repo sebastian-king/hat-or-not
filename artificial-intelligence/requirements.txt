@@ -1,0 +1,6 @@
+matplotlib
+pandas
+#scikit-learn
+#tensorflow
+#fastai
+opencv-python
