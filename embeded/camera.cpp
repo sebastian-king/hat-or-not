@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <ArduCAM.h>
 #include <SPI.h>
+#include <ArduinoJson.h>
 #include "memorysaver.h"
 
 //Http POST
@@ -19,6 +20,11 @@
 const int CS = 5; // Enable pin
 const int CAM_POWER_ON = 4; // note: D10 on ArduCAM ESP32 is PIN 4
 const int LED = 13; // LED pin for debugging
+
+const int RED_PIN = 1;
+const int BLUE_PIN = 2;
+const int GREEN_PIN = 3;
+
 const int INPUT_BTN = 32; // Input from from button push
 
 // Select the appropriate camera module
@@ -58,6 +64,37 @@ void start_capture() {
   myCAM.start_capture();
 }
 
+void printRGB(String hexcode) {
+  if (hexcode[0] == '#') hexcode.erase(hexcode.begin());
+  int strLength = hexcode.size();
+
+  if (strLength > 6) return;
+
+  String colors[3] = { "00", "00", "00" };
+  int j = 0;
+  for(int i = 0; i < strLength; i = i + 2)
+  {
+    colors[j].at(0) = hexcode[i];
+    colors[j].at(1) = hexcode[i + 1];
+    j += 1;
+  }
+
+  std::cout << colors[0] << std::endl;
+  std::cout << colors[1] << std::endl;
+  std::cout << colors[2] << std::endl;
+
+  int colorsHEXNUMS[3];
+  for (int i= 0; i < 3; i++)
+  {
+      colorsHEXNUMS[i] = std::stoi(colors[i], 0, 16);
+  }
+
+   // diff logic
+   analogWrite(RED_PIN, colorsHEXNUMS[0]);
+   analogWrite(GREEN_PIN, colorsHEXNUMS[1]);
+   analogWrite(BLUE_PIN, colorsHEXNUMS[2]);
+}
+
 void sendData(uint8_t * payload, size_t len) {
   Serial.print(F("About to send data to server, len: "));
   Serial.println(len);
@@ -67,15 +104,28 @@ void sendData(uint8_t * payload, size_t len) {
   http.addHeader("Content-Type", "Content-Type: image/jpeg"); 
 
   int httpResponseCode = http.POST(payload, len);
-  
-  if (httpResponseCode >= 0){
+
+  if (httpResponseCode >= 0) {
     String response = http.getString();  //Get the response to the request
     Serial.println(httpResponseCode);   //Print return code
     Serial.println(response);           //Print request answer
-  } else {
-    Serial.print("Error on sending POST: ");
-    Serial.println(httpResponseCode);
-  }
+    const size_t capacity = 256; //Based on this website https://arduinojson.org/v6/assistant/
+    DynamicJsonDocument doc(capacity);
+
+    // Parse JSON object
+    DeserializationError error = deserializeJson(doc, client);
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+      }
+
+    printRGB(doc["clothingColour"].as<char*>());
+
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+    }
   http.end();
 }
 
@@ -152,6 +202,12 @@ void setup() {
   pinMode(CS, OUTPUT);
   pinMode(CAM_POWER_ON , OUTPUT);
   pinMode(LED, OUTPUT);
+
+  // Set the RGB LED pins as an outputs
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+
 
   // Set the INPUT_BTN pin as an input
   pinMode(INPUT_BTN, INPUT);
