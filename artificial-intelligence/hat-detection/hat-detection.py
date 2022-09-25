@@ -111,9 +111,15 @@ output_data = {'Season':[], 'Product Name':[], 'Usage': []}
 if len(idx_rec) > 0:
     for i, row in df.loc[idx_rec].iterrows():
         output_data['Season'].append(row.season)
-        output_data['Product Name'].append(row.productDisplayName)
+        output_data['Product Name'].append(row.productDisplayName.replace(str(row.baseColour),''))
         output_data['Usage'].append(row.usage)
-    print('True', output_data)
+    final = {}
+    final['Season'] = max(set(output_data['Season']), key=output_data['Season'].count)
+    index = output_data['Season'].index(final['Season'])
+    final['Product Name'] = max(set(output_data['Product Name']), key=output_data['Product Name'].count)
+    final['Usage'] = max(set(output_data['Usage']), key=output_data['Usage'].count)
+    
+    print('True', final)
 else:
     print('False', output_data)
     
