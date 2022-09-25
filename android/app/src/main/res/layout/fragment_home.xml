@@ -6,39 +6,83 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
+
     <LinearLayout
+        android:background="@drawable/background"
+        android:id="@+id/linear"
         android:gravity="center"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <Button
-            android:id="@+id/hat"
+        android:orientation="vertical"
+        android:layout_marginBottom="50dp"
+        >
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:background="@drawable/hat_bowtie"/>
+        <TextView
+            android:text="Hat or Not?"
+            android:textSize="35sp"
+            android:textColor="@color/black"
+            android:layout_gravity="center"
+            android:gravity="center"
             android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"/>
+        <Button
+            android:layout_margin="10dp"
+            android:background="@drawable/custom_btn"
+            android:id="@+id/checkMe"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:text="Vibe Check" />
+        <Button
+            android:layout_marginBottom="10dp"
+            android:id="@+id/hat"
+            android:background="@drawable/custom_btn"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Hat" />
 
         <Button
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/custom_btn"
             android:id="@+id/glasses"
-            android:layout_width="match_parent"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Glasses" />
 
         <Button
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/custom_btn"
             android:id="@+id/top"
-            android:layout_width="match_parent"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Top" />
         <Button
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/custom_btn"
             android:id="@+id/bottom"
-            android:layout_width="match_parent"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Trousers" />
 
         <Button
+            android:background="@drawable/custom_btn"
             android:id="@+id/shoes"
-            android:layout_width="match_parent"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:text="Shoes" />
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/gif"
+        android:visibility="gone"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>

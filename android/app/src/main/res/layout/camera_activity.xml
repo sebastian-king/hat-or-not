@@ -10,11 +10,18 @@
         android:layout_height="match_parent"
         />
 
+    <ImageView
+        android:layout_width="match_parent"
+        android:scaleType="fitCenter"
+        android:layout_height="match_parent"
+        android:background="@drawable/outline"/>
     <Button
         android:id="@+id/button_capture"
         android:text="Capture"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/custom_btn"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

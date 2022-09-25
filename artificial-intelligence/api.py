@@ -6,7 +6,13 @@ from fastapi.responses import FileResponse
 import uvicorn
 
 from colour_detection.colour_detection import colorDetection
+from hat_detection.hat_detection import hatDetection
+from clothing_classification.clothing_classification import clothingClassification
+
 import numpy as np
+
+from PIL import Image
+import io
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-live', '--live', action='store_true')
@@ -23,17 +29,28 @@ async def ingest_clothing_image(request: Request):
 	#print('data', data.hex());
 	bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
 	img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
+	print('shape', img.shape)
 
 	filename = 'latest.jpg';
 	cv2.imwrite(filename, img);
 
-	# mask the image sections
+	resized_image = cv2.resize(img, (224, 224))
+	# mask sections?
+
+	args['topwear'] = False;
+	args['bottomwear'] = True;
+
 	# hat detection
+	hat = hatDetection(args, resized_image)
 	# clothing detection
+	clothing = clothingClassification(args, resized_image)
 	# colour detection
 	colours = colorDetection(args, img)
 
-	return colorDetection(args, img)
+	print ('hat', hat)
+	#print ('clothing', clothing)
+	print ('colours', colours)
+	return colours
 
 @app.get("/latest")
 async def latest(request: Request):

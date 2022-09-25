@@ -1,11 +1,9 @@
-package com.hackdfw.hatornot.ui
+package com.hackdfw.hatornot.ui.camera
 
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
 import android.content.Context
-import android.graphics.Rect
 import android.hardware.Camera
-import android.hardware.Camera.AutoFocusCallback
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
