@@ -3,6 +3,8 @@ package com.hackdfw.hatornot.ui.home
 import android.Manifest
 import android.app.Activity
 import android.app.Activity.RESULT_OK
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -23,15 +25,14 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.hackdfw.hatornot.databinding.FragmentHomeBinding
-import com.hackdfw.hatornot.ui.camera.CameraActivity
 import com.hackdfw.hatornot.ui.apiclient.ApiClient
+import com.hackdfw.hatornot.ui.camera.CameraActivity
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.ByteArrayOutputStream
-import java.net.URI
 
 
 class HomeFragment : Fragment() {
@@ -86,9 +87,23 @@ class HomeFragment : Fragment() {
             }
             override fun onResponse(call: Call<Void?>, response: Response<Void?>) {
                 Log.e("Success", response.message())
-                val gson = Gson()
-                //var jsonReader = gson.fromJson<com.hackdfw.hatornot.ui.Response>(response.toString(),com.hackdfw.hatornot.ui.Response::class.java)
-                //binding.setBackgroundColor(jsonReader.clothingColour.toInt())
+                if (null != response){
+                    val gson = Gson()
+                    var jsonReader = gson.fromJson<com.hackdfw.hatornot.ui.Response>(response.toString(),com.hackdfw.hatornot.ui.Response::class.java)
+                    val dialog = AlertDialog.Builder(context)
+                    dialog.setTitle("Hat or Not?")
+                    if (jsonReader.isWearingHat){
+                        dialog.setMessage("You are wearing a ${jsonReader.hatMetadata.type} hat " +
+                                "of color ${jsonReader.clothingColour}")
+                    }else{
+                        dialog.setMessage("You are not wearing a hat :(")
+                    }
+
+                    dialog.setPositiveButton("OK",DialogInterface.OnClickListener { dialog, which ->
+                        dialog.dismiss()
+                    })
+                    dialog.show()
+                }
             }
         })
     }
