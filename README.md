@@ -11,3 +11,7 @@ run color-detection:
 
 if running for live image:
  `python3 color-detection.py --image [image_URL] --live`
+
+ run hat-detection
+
+ `python3 hat-detection.py --testimage [testimage_URL]`
