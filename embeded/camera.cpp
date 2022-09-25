@@ -7,14 +7,12 @@
 //Http POST
 #include "HTTPClient.h"
 
-//#if !(defined ESP32)
-//#error Please select the ArduCAM ESP32 UNO board in the Tools/Board
-//#endif
+#if !(defined ESP32)
+#error Please select the ArduCAM ESP32 UNO board in the Tools/Board
+#endif
 
-#if !(defined (OV2640_MINI_2MP)||defined (OV5640_MINI_5MP_PLUS) || defined (OV5642_MINI_5MP_PLUS) \
-    || defined (OV5642_MINI_5MP) || defined (OV5642_MINI_5MP_BIT_ROTATION_FIXED) \
-    ||(defined (ARDUCAM_SHIELD_V2) && (defined (OV2640_CAM) || defined (OV5640_CAM) || defined (OV5642_CAM))))
-#error Please select the hardware platform and camera module in the ../libraries/ArduCAM/memorysaver.h file
+#if !(defined OV2640_MINI_2MP_PLUS)
+  #error Please select the hardware platform and camera module in the ../libraries/ArduCAM/memorysaver.h file
 #endif
 
 // Chip select pin for SLI
@@ -24,12 +22,10 @@ const int LED = 13; // LED pin for debugging
 const int INPUT_BTN = 32; // Input from from button push
 
 // Select the appropriate camera module
-#if defined (OV2640_MINI_2MP) || defined (OV2640_CAM)
-ArduCAM myCAM(OV2640, CS);
-#elif defined (OV5640_MINI_5MP_PLUS) || defined (OV5640_CAM)
-ArduCAM myCAM(OV5640, CS);
-#elif defined (OV5642_MINI_5MP_PLUS) || defined (OV5642_MINI_5MP) || defined (OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||(defined (OV5642_CAM))
-ArduCAM myCAM(OV5642, CS);
+#if defined (OV2640_MINI_2MP_PLUS)
+  ArduCAM myCAM( OV2640, CS );
+#else
+  ArduCAM myCAM( OV5642, CS );
 #endif
 
 // Set WiFi details
@@ -46,8 +42,6 @@ bool is_header = false;
 static const size_t spiBufferSize = 1024;
 static uint8_t spiBuffer[spiBufferSize] = {0xFF};
 
-bool ws_connected = true;
-
 void enableDebugLED() {
     digitalWrite(LED, HIGH);
     Serial.println(F("Turning debug LED to ON"));
@@ -59,118 +53,80 @@ void disableDebugLED() {
 }
 
 void start_capture() {
+  myCAM.flush_fifo();
   myCAM.clear_fifo_flag();
   myCAM.start_capture();
 }
 
 void sendData(uint8_t * payload, size_t len) {
+  Serial.print(F("About to send data to server, len: "));
+  Serial.println(len);
   HTTPClient http;
-  //String url="http://hat-or-not.helpfulseb.com:8080/ingest/outfit";
-  //String jsondata=("");
 
-  http.begin("http://hat-or-not.helpfulseb.com", 8080, "/ingest/outfit"); 
+  http.begin("http://hat-or-not.helpfulseb.com:8080/ingest/outfit"); 
   http.addHeader("Content-Type", "Content-Type: image/jpeg"); 
 
-  //int httpResponseCode = http.startRequest("hat-or-not.helpfulseb.com", 8080, "/ingest/outfit", "POST", "ESP32"); //Send the actual POST request
   int httpResponseCode = http.POST(payload, len);
   
-  if(httpResponseCode >= 0){
+  if (httpResponseCode >= 0){
     String response = http.getString();  //Get the response to the request
     Serial.println(httpResponseCode);   //Print return code
     Serial.println(response);           //Print request answer
   } else {
     Serial.print("Error on sending POST: ");
     Serial.println(httpResponseCode);
-
-    http.end();
- }
+  }
+  http.end();
 }
 
-void serverStream() {
-  // jpeg byte format references: https://docs.fileformat.com/image/jpeg/
-  delay(1000);
-
-  int total_time = 0;
-  int capture_total_time = 0;
-  int send_total_time = 0;
-  int spi_total_time = 0;
-  total_time = millis();
-  capture_total_time = total_time;
+void camCapture(ArduCAM myCAM) {
+  start_capture();
+  Serial.println(F("Started capture, waiting for capturing to be done"));
+  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));
+  Serial.println(F("Photo captured, probably"));
   
-  myCAM.clear_fifo_flag();
-  myCAM.start_capture();
-  //Serial.println(F("CAM Capturing"));
-
-//  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
-//    //Serial.printf("Awaiting capture completion: %d\r", millis() - capture_total_time);
-//  }
-  capture_total_time = millis() - capture_total_time;
-//  Serial.print(F("capture total_time used (in miliseconds):"));
-//  Serial.println(capture_total_time, DEC);
-//
-//  Serial.println(F("CAM Capture Done."));
-  
-  send_total_time = millis();
-  
-  uint32_t len = myCAM.read_fifo_length();
-  
-  if (len >= MAX_FIFO_SIZE) // 8M
+  uint32_t len  = myCAM.read_fifo_length();
+  if (len >= MAX_FIFO_SIZE) //8M
   {
     Serial.println(F("Over size."));
   }
-  
-  if (len == 0 ) // 0 kb
+  if (len == 0 ) //0 kb
   {
     Serial.println(F("Size is 0."));
   }
-  
   myCAM.CS_LOW();
   myCAM.set_fifo_burst();
   
-  //if (!ws_connected) return;
-  
   i = 0;
-  while ( len-- ) {
+  while ( len-- )
+  {
     temp_last = temp;
-    int spi_time = millis();
-    temp = SPI.transfer(0x00);
-    spi_total_time += millis() - spi_time;
-    
+    temp =  SPI.transfer(0x00);
     //Read JPEG data from FIFO
-    if ( (temp == 0xD9) && (temp_last == 0xFF) ) { // end of image //If find the end, finish by breaking out of the while loop
-      buffer[i++] = temp; // save the last 0XD9
-      
+    if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end ,break while,
+    {
+      buffer[i++] = temp;  //save the last  0XD9
       // Write the remaining bytes in the buffer
-      //if (!ws_connected) break;
-      //client.write(&buffer[0], i);
-      int data_time = millis();
-      //webSocket.sendBIN(&buffer[0], i);
-      sendData(&buffer[0], i);
-      Serial.printf("Data time (in milliseconds): %d\n", millis() - data_time);
-      
+      // WARNING: client.write(&buffer[0], i);
       is_header = false;
       i = 0;
       myCAM.CS_HIGH();
       break;
     }
-    
-    if (is_header == true) { // middle of image
+    if (is_header == true)
+    {
       // Write image data to buffer if not full
-      if (i < bufferSize) {
+      if (i < bufferSize)
         buffer[i++] = temp;
-      } else {
-        // Write bufferSize bytes image data to socket
-        //if (!ws_connected) break;
-        
-        //client.write(&buffer[0], bufferSize);
-        //webSocket.sendBIN(&buffer[0], bufferSize);
-        sendData(&buffer[0], bufferSize);
-        
+      else
+      {
+        // Write bufferSize bytes image data to file
+        // WARNING: client.write(&buffer[0], bufferSize);
         i = 0;
         buffer[i++] = temp;
       }
     }
-    else if ((temp == 0xD8) & (temp_last == 0xFF)) // start of image
+    else if ((temp == 0xD8) & (temp_last == 0xFF))
     {
       is_header = true;
       buffer[i++] = temp_last;
@@ -178,22 +134,10 @@ void serverStream() {
     }
   }
   
-  send_total_time = millis() - send_total_time;
-  Serial.print(F("send total_time used (in miliseconds):"));
-  Serial.println(send_total_time, DEC);
-  Serial.println(F("CAM send Done."));
-  total_time = millis() - total_time;
-  
-  Serial.print(F("SPI time (in miliseconds):"));
-  Serial.println(spi_total_time, DEC);
-  
-  Serial.print(F("Frame time (in miliseconds):"));
-  Serial.println(total_time, DEC);
+  sendData(&buffer[0], len);
 }
 
 void setup() {  
-
-  
   uint8_t vid, pid;
   uint8_t temp;
   
@@ -234,55 +178,22 @@ void setup() {
     while(1);
   }
 
-  // Initialise & detect the camera module
-  #if defined (OV2640_MINI_2MP) || defined (OV2640_CAM)
-    // Check if the camera module type is OV2640
-    myCAM.wrSensorReg8_8(0xff, 0x01);
-    myCAM.rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
-    myCAM.rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
-    if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 ))) {
-      Serial.println(F("Can't find OV2640 module!"));
-    } else {
-      Serial.println(F("OV2640 detected."));
-      enableDebugLED();
-    }
-  #elif defined (OV5640_MINI_5MP_PLUS) || defined (OV5640_CAM)
-    // Check if the camera module type is OV5640
-    myCAM.wrSensorReg16_8(0xff, 0x01);
-    myCAM.rdSensorReg16_8(OV5640_CHIPID_HIGH, &vid);
-    myCAM.rdSensorReg16_8(OV5640_CHIPID_LOW, &pid);
-    if ((vid != 0x56) || (pid != 0x40)) {
-      Serial.println(F("Can't find OV5640 module!"));
-    } else {
-      Serial.println(F("OV5640 detected."));
-      enableDebugLED();
-    }
-  #elif defined (OV5642_MINI_5MP_PLUS) || defined (OV5642_MINI_5MP) || defined (OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||(defined (OV5642_CAM))
-    // Check if the camera module type is OV5642
-    myCAM.wrSensorReg16_8(0xff, 0x01);
-    myCAM.rdSensorReg16_8(OV5642_CHIPID_HIGH, &vid);
-    myCAM.rdSensorReg16_8(OV5642_CHIPID_LOW, &pid);
-    if ((vid != 0x56) || (pid != 0x42)) {
-      Serial.println(F("Can't find OV5642 module!"));
-    } else {
-      Serial.println(F("OV5642 detected."));
-      enableDebugLED();
-    }
-  #endif
+  // Check if the camera module type is OV2640
+  myCAM.wrSensorReg8_8(0xff, 0x01);
+  myCAM.rdSensorReg8_8(OV2640_CHIPID_HIGH, &vid);
+  myCAM.rdSensorReg8_8(OV2640_CHIPID_LOW, &pid);
+  if ((vid != 0x26 ) && (( pid != 0x41 ) || ( pid != 0x42 ))) {
+    Serial.println(F("Can't find OV2640 module!"));
+  } else {
+    Serial.println(F("OV2640 detected."));
+    enableDebugLED();
+  }
   
   // Change to JPEG capture mode and initialize the camera module
   myCAM.set_format(JPEG);
   myCAM.InitCAM();
   
-  #if defined (OV2640_MINI_2MP) || defined (OV2640_CAM)
-    myCAM.OV2640_set_JPEG_size(OV2640_640x480);
-  #elif defined (OV5640_MINI_5MP_PLUS) || defined (OV5640_CAM)
-    myCAM.write_reg(ARDUCHIP_TIM, VSYNC_LEVEL_MASK);   //VSYNC is active HIGH
-    myCAM.OV5640_set_JPEG_size(OV2640_640x480);
-  #elif defined (OV5642_MINI_5MP_PLUS) || defined (OV5642_MINI_5MP) || defined (OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||(defined (OV5642_CAM))
-    myCAM.write_reg(ARDUCHIP_TIM, VSYNC_LEVEL_MASK);   //VSYNC is active HIGH
-    myCAM.OV5640_set_JPEG_size(OV2640_640x480);
-  #endif
+  myCAM.OV2640_set_JPEG_size(OV2640_640x480);
 
   myCAM.clear_fifo_flag();
   
@@ -305,17 +216,15 @@ void setup() {
     delay(750);
     Serial.println(F("."));
   }
-  Serial.println(F("WiFi connected"));
-  Serial.println("");
+  Serial.print(F("WiFi connected: "));
   Serial.println(WiFi.localIP());
 }
 
 void loop() {
-  Serial.printf("Total PSRAM: %d\n", ESP.getPsramSize());
-  //if (wifiMulti.run() == ws_connected && digitalRead(INPUT_BTN)) {
-  if (ws_connected && digitalRead(INPUT_BTN)) {
-    serverStream();
-    Serial.printf("IT's alive \n");
+  if (digitalRead(INPUT_BTN)) {
+    Serial.println(F("Capturing and sending..."));
+    camCapture(myCAM);
+    delay(500);
   }
-  delay(750);
+  delay(1000);
 }
