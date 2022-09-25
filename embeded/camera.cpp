@@ -1,9 +1,11 @@
-#include <WiFi.h>
+#include "WiFi.h"
 #include <Wire.h>
 #include <ArduCAM.h>
 #include <SPI.h>
 #include "memorysaver.h"
-#include <WiFiUdp.h>
+
+//Http POST
+#include "HTTPClient.h"
 
 //#if !(defined ESP32)
 //#error Please select the ArduCAM ESP32 UNO board in the Tools/Board
@@ -19,6 +21,7 @@
 const int CS = 5; // Enable pin
 const int CAM_POWER_ON = 4; // note: D10 on ArduCAM ESP32 is PIN 4
 const int LED = 13; // LED pin for debugging
+const int INPUT_BTN = 32; // Input from from button push
 
 // Select the appropriate camera module
 #if defined (OV2640_MINI_2MP) || defined (OV2640_CAM)
@@ -28,8 +31,6 @@ ArduCAM myCAM(OV5640, CS);
 #elif defined (OV5642_MINI_5MP_PLUS) || defined (OV5642_MINI_5MP) || defined (OV5642_MINI_5MP_BIT_ROTATION_FIXED) ||(defined (OV5642_CAM))
 ArduCAM myCAM(OV5642, CS);
 #endif
-
-WiFiUDP Udp;
 
 // Set WiFi details
 const char *ssid = "HackDFW"; // Put your SSID here
@@ -63,10 +64,26 @@ void start_capture() {
 }
 
 void sendData(uint8_t * payload, size_t len) {
-  //Udp.beginPacket("untrobotics.com", 2115);
-  Udp.beginPacket("http://hat-or-not.helpfulseb.com/ingest/outfit", 8080);
-  Udp.write(payload, len);
-  Udp.endPacket();
+  HTTPClient http;
+  //String url="http://hat-or-not.helpfulseb.com:8080/ingest/outfit";
+  //String jsondata=("");
+
+  http.begin("http://hat-or-not.helpfulseb.com", 8080, "/ingest/outfit"); 
+  http.addHeader("Content-Type", "Content-Type: image/jpeg"); 
+
+  //int httpResponseCode = http.startRequest("hat-or-not.helpfulseb.com", 8080, "/ingest/outfit", "POST", "ESP32"); //Send the actual POST request
+  int httpResponseCode = http.POST(payload, len);
+  
+  if(httpResponseCode >= 0){
+    String response = http.getString();  //Get the response to the request
+    Serial.println(httpResponseCode);   //Print return code
+    Serial.println(response);           //Print request answer
+  } else {
+    Serial.print("Error on sending POST: ");
+    Serial.println(httpResponseCode);
+
+    http.end();
+ }
 }
 
 void serverStream() {
@@ -82,16 +99,16 @@ void serverStream() {
   
   myCAM.clear_fifo_flag();
   myCAM.start_capture();
-  Serial.println(F("CAM Capturing"));
+  //Serial.println(F("CAM Capturing"));
 
-  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
-    //Serial.printf("Awaiting capture completion: %d\r", millis() - capture_total_time);
-  }
+//  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
+//    //Serial.printf("Awaiting capture completion: %d\r", millis() - capture_total_time);
+//  }
   capture_total_time = millis() - capture_total_time;
-  Serial.print(F("capture total_time used (in miliseconds):"));
-  Serial.println(capture_total_time, DEC);
-
-  Serial.println(F("CAM Capture Done."));
+//  Serial.print(F("capture total_time used (in miliseconds):"));
+//  Serial.println(capture_total_time, DEC);
+//
+//  Serial.println(F("CAM Capture Done."));
   
   send_total_time = millis();
   
@@ -174,7 +191,9 @@ void serverStream() {
   Serial.println(total_time, DEC);
 }
 
-void setup() {
+void setup() {  
+
+  
   uint8_t vid, pid;
   uint8_t temp;
   
@@ -182,6 +201,9 @@ void setup() {
   pinMode(CS, OUTPUT);
   pinMode(CAM_POWER_ON , OUTPUT);
   pinMode(LED, OUTPUT);
+
+  // Set the INPUT_BTN pin as an input
+  pinMode(INPUT_BTN, INPUT);
 
   // Enable the camera
   digitalWrite(CAM_POWER_ON, HIGH);
@@ -278,21 +300,22 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+  //wifiMulti.addAP(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(750);
     Serial.println(F("."));
   }
   Serial.println(F("WiFi connected"));
   Serial.println("");
   Serial.println(WiFi.localIP());
-
-  delay(10000);
 }
 
 void loop() {
   Serial.printf("Total PSRAM: %d\n", ESP.getPsramSize());
-  if (ws_connected) {
+  //if (wifiMulti.run() == ws_connected && digitalRead(INPUT_BTN)) {
+  if (ws_connected && digitalRead(INPUT_BTN)) {
     serverStream();
+    Serial.printf("IT's alive \n");
   }
-  delay(1000);
+  delay(750);
 }
