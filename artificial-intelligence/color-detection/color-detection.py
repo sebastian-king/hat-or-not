@@ -61,17 +61,17 @@ if args['image'] is not True and args['serve'] is not True:
 img_path = args['image']
 
 if args['serve']:
-	print('Starting API server on port 8081')
+	print('Starting API server on port 8080')
 	app = FastAPI()
 
-	@app.post("/ingest/clothing")
+	@app.post("/ingest/outfit")
 	async def ingest_clothing_image(request: Request):
 		data: bytes = await request.body()
 		bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
 		img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
 		return colorDetection(img)
 
-	uvicorn.run(app, host="0.0.0.0", port=8081)
+	uvicorn.run(app, host="0.0.0.0", port=8080)
 else:
 	#Reading image with opencv
 	img = cv2.imread(img_path)
