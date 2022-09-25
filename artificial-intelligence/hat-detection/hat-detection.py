@@ -107,11 +107,12 @@ indices = pd.Series(range(len(df)), index=df.index)
 idx_ref = 0
 idx_rec, idx_sim = get_recommender(idx_ref, indices, top_n = 0.6)
     
-output_data = {'Season':[], 'Product Name':[]}
+output_data = {'Season':[], 'Product Name':[], 'Usage': []}
 if len(idx_rec) > 0:
     for i, row in df.loc[idx_rec].iterrows():
         output_data['Season'].append(row.season)
         output_data['Product Name'].append(row.productDisplayName)
+        output_data['Usage'].append(row.usage)
     print('True', output_data)
 else:
     print('False', output_data)
