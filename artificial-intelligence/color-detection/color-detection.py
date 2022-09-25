@@ -31,23 +31,23 @@ def getColorName(R,G,B,csv):
     return cname, chex
 
 def colorDetection(args, img):
-	if args['live']:
+    if args['live']:
         img = histogram_equalization(img)
 
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-	plt.imshow(img)
-	plt.show()
-	#Reading csv file with pandas and giving names to each column
-	index=["color","color_name","hex","R","G","B"]
-	csv = pd.read_csv(os.path.join(os.getcwd(),'colors.csv'), names=index, header=None)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    plt.imshow(img)
+    plt.show()
+    #Reading csv file with pandas and giving names to each column
+    index=["color","color_name","hex","R","G","B"]
+    csv = pd.read_csv(os.path.join(os.getcwd(),'colors.csv'), names=index, header=None)
 
-	width = img.shape[1]
-	height = img.shape[0]
-	ypos = int(height/2)
-	xpos = int(width/2)
-	r,g,b = img[ypos,xpos]
-	color, hex = getColorName(r,g,b,csv) #+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
-	return color + " " + hex
+    width = img.shape[1]
+    height = img.shape[0]
+    ypos = int(height/2)
+    xpos = int(width/2)
+    r,g,b = img[ypos,xpos]
+    color, hex = getColorName(r,g,b,csv) #+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
+    return color + " " + hex
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', help="Image Path")
@@ -66,7 +66,10 @@ if args['serve']:
 
 	@app.post("/ingest/outfit")
 	async def ingest_clothing_image(request: Request):
+		type = request.headers.get('clothing-type')
+		print('type', type);
 		data: bytes = await request.body()
+		print('data', data);
 		bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
 		img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
 		return colorDetection(args, img)
