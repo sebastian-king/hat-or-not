@@ -82,10 +82,15 @@ void sendData(uint8_t * payload, size_t len) {
 void camCapture(ArduCAM myCAM) {
   start_capture();
   Serial.println(F("Started capture, waiting for capturing to be done"));
-  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK));
+  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
+    Serial.println(F("Awaiting capturing completion..."));
+    delay(10);
+  }
   Serial.println(F("Photo captured, probably"));
   
   uint32_t len  = myCAM.read_fifo_length();
+  Serial.print(F("FIFO len: "));
+  Serial.println(len);
   if (len >= MAX_FIFO_SIZE) //8M
   {
     Serial.println(F("Over size."));
@@ -103,11 +108,12 @@ void camCapture(ArduCAM myCAM) {
     temp_last = temp;
     temp =  SPI.transfer(0x00);
     //Read JPEG data from FIFO
-    if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end ,break while,
+    if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end, break while,
     {
       buffer[i++] = temp;  //save the last  0XD9
       // Write the remaining bytes in the buffer
       // WARNING: client.write(&buffer[0], i);
+      sendData(&buffer[0], i-1);
       is_header = false;
       i = 0;
       myCAM.CS_HIGH();
@@ -122,6 +128,7 @@ void camCapture(ArduCAM myCAM) {
       {
         // Write bufferSize bytes image data to file
         // WARNING: client.write(&buffer[0], bufferSize);
+        Serial.println(F("WARNING: ran out of buffer space, starting from zero"));
         i = 0;
         buffer[i++] = temp;
       }
@@ -134,7 +141,7 @@ void camCapture(ArduCAM myCAM) {
     }
   }
   
-  sendData(&buffer[0], len);
+  myCAM.clear_fifo_flag();
 }
 
 void setup() {  
