@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 import uvicorn
 
 def histogram_equalization(img):
@@ -39,7 +40,7 @@ def colorDetection(args, img):
     plt.show()
     #Reading csv file with pandas and giving names to each column
     index=["color","color_name","hex","R","G","B"]
-    csv = pd.read_csv(os.path.join(os.getcwd(),'colors.csv'), names=index, header=None)
+    csv = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)),'colors.csv'), names=index, header=None)
 
     width = img.shape[1]
     height = img.shape[0]
@@ -49,33 +50,42 @@ def colorDetection(args, img):
     color, hex = getColorName(r,g,b,csv) #+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
     return color + " " + hex
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-i', '--image', help="Image Path")
-ap.add_argument('-live', '--live', action='store_true')
-ap.add_argument('-serve', '--serve', action='store_true')
-args = vars(ap.parse_args())
+if __name__ == "__main__":
+	ap = argparse.ArgumentParser()
+	ap.add_argument('-i', '--image', help="Image Path")
+	ap.add_argument('-live', '--live', action='store_true')
+	ap.add_argument('-serve', '--serve', action='store_true')
+	args = vars(ap.parse_args())
 
-if args['image'] is not True and args['serve'] is not True:
-    ap.error("requires one of --image or --serve.")
+	if args['image'] is not True and args['serve'] is not True:
+		ap.error("requires one of --image or --serve.")
 
-img_path = args['image']
+		img_path = args['image']
 
-if args['serve']:
-	print('Starting API server on port 8080')
-	app = FastAPI()
+		if args['serve']:
+			print('Starting API server on port 8080')
+		app = FastAPI()
 
-	@app.post("/ingest/outfit")
-	async def ingest_clothing_image(request: Request):
-		type = request.headers.get('clothing-type')
-		print('type', type);
-		data: bytes = await request.body()
-		print('data', data);
-		bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
-		img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
-		return colorDetection(args, img)
+		@app.post("/ingest/outfit")
+		async def ingest_clothing_image(request: Request):
+			type = request.headers.get('clothing-type')
+			print('type', type);
+			data: bytes = await request.body()
+			print('data', data.hex());
+			bytes_as_np_array = np.frombuffer(data, dtype=np.uint8)
+			img = cv2.imdecode(bytes_as_np_array, cv2.IMREAD_ANYCOLOR)
 
-	uvicorn.run(app, host="0.0.0.0", port=8080)
-else:
-	#Reading image with opencv
-	img = cv2.imread(img_path)
-	colorDetection(args, img);
+			filename = 'latest.jpg';
+			cv2.imwrite(filename, img);
+
+			return colorDetection(args, img)
+
+		@app.get("/latest")
+		async def latest(request: Request):
+			return FileResponse("latest.jpg")
+
+		uvicorn.run(app, host="0.0.0.0", port=8080)
+	else:
+		#Reading image with opencv
+		img = cv2.imread(img_path)
+		colorDetection(args, img);
