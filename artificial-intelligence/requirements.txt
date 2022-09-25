@@ -1,6 +1,6 @@
 matplotlib
 pandas
-#scikit-learn
-#tensorflow
+scikit-learn
+tensorflow
 #fastai
 opencv-python
