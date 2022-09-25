@@ -45,7 +45,7 @@
                 android:value="" />
         </activity>
 
-        <activity android:name=".ui.CameraActivity"
+        <activity android:name=".ui.camera.CameraActivity"
             android:screenOrientation="portrait"
             android:exported="true">
         </activity>

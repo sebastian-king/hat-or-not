@@ -1,4 +1,4 @@
-package com.hackdfw.hatornot.ui
+package com.hackdfw.hatornot.ui.camera
 
 import android.app.Activity
 import android.content.Intent
@@ -24,6 +24,9 @@ class CameraActivity : Activity() {
     private var mPreview: CameraPreview? = null
     private val mPicture = Camera.PictureCallback { data,_ ->
         postSet(data,"custom")
+        val intent = Intent()
+        intent.putExtra("","")
+        setResult(666,intent)
         mCamera?.release()
         finish()
     }
