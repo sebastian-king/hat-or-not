@@ -1,6 +1,8 @@
 package com.hackdfw.hatornot.ui.camera
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -9,6 +11,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.FrameLayout
+import com.google.gson.Gson
 import com.hackdfw.hatornot.R
 import com.hackdfw.hatornot.ui.apiclient.ApiClient
 import okhttp3.MediaType
@@ -78,7 +81,23 @@ class CameraActivity : Activity() {
                 t.localizedMessage?.let { Log.e("Failure", it) }
             }
             override fun onResponse(call: Call<Void?>, response: Response<Void?>) {
-                Log.e("Success", "DONE")
+                if (null != response){
+                    val gson = Gson()
+                    var jsonReader = gson.fromJson<com.hackdfw.hatornot.ui.Response>(response.toString(),com.hackdfw.hatornot.ui.Response::class.java)
+                    val dialog = AlertDialog.Builder(applicationContext)
+                    dialog.setTitle("Hat or Not?")
+                    if (jsonReader.isWearingHat){
+                        dialog.setMessage("You are wearing a ${jsonReader.hatMetadata.type} hat " +
+                                "of color ${jsonReader.clothingColour}")
+                    }else{
+                        dialog.setMessage("You are not wearing a hat :(")
+                    }
+
+                    dialog.setPositiveButton("OK", DialogInterface.OnClickListener { dialog, which ->
+                        dialog.dismiss()
+                    })
+                    dialog.show()
+                }
             }
         })
     }
