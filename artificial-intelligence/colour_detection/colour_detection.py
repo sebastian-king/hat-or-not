@@ -48,7 +48,8 @@ def colorDetection(args, img):
     xpos = int(width/2)
     r,g,b = img[ypos,xpos]
     color, hex = getColorName(r,g,b,csv) #+ ' R='+ str(r) + ' G='+ str(g) + ' B='+ str(b)
-    return color + " " + hex
+    print("Text colour: ", color)
+    return hex
 
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser()

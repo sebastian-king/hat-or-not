@@ -1,21 +1,29 @@
-# the Directive is a complete description of your application, including all of its business logic.
-# appVersion should be updated for each new deployment of your app.
-# atmoVersion declares which version of Atmo is used for the `subo dev` command.
-
 identifier: com.suborbital.hat-or-not
 appVersion: v0.1.0
 atmoVersion: v0.4.7
-
-
 handlers:
-  - type: request
-    resource: /ingest/clothing
-    method: POST
-    steps:
-      - fn: ingest-clothing
-
-  - type: request
-    resource: /ingest/outfit
-    method: POST
-    steps:
-      - fn: ingest-outfit
+- type: request
+  method: POST
+  resource: /ingest/clothing
+  steps:
+  - fn: ingest-clothing
+- type: request
+  method: POST
+  resource: /ingest/outfit
+  steps:
+  - fn: ingest-outfit
+runnables:
+- name: ingest-clothing
+  namespace: default
+  lang: javascript
+  version: ""
+  apiVersion: 0.15.1
+  fqfn: com.suborbital.hat-or-not#default::ingest-clothing@v0.1.0
+  fqfnUri: ""
+- name: ingest-outfit
+  namespace: default
+  lang: javascript
+  version: ""
+  apiVersion: 0.15.1
+  fqfn: com.suborbital.hat-or-not#default::ingest-outfit@v0.1.0
+  fqfnUri: ""
