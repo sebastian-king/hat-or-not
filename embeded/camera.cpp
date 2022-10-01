@@ -2,8 +2,10 @@
 #include <Wire.h>
 #include <ArduCAM.h>
 #include <SPI.h>
-#include <ArduinoJson.h>
+#include "ArduinoJson.h"
 #include "memorysaver.h"
+#include <stdlib.h>
+#include <Arduino.h>
 
 //Http POST
 #include "HTTPClient.h"
@@ -16,14 +18,16 @@
   #error Please select the hardware platform and camera module in the ../libraries/ArduCAM/memorysaver.h file
 #endif
 
+int colorsHEXNUMS[3];
+  
 // Chip select pin for SLI
 const int CS = 5; // Enable pin
 const int CAM_POWER_ON = 4; // note: D10 on ArduCAM ESP32 is PIN 4
 const int LED = 13; // LED pin for debugging
 
-const int RED_PIN = 1;
-const int BLUE_PIN = 2;
-const int GREEN_PIN = 3;
+const int RED_PIN = 33;
+const int BLUE_PIN = 25;
+const int GREEN_PIN = 26;
 
 const int INPUT_BTN = 32; // Input from from button push
 
@@ -65,40 +69,38 @@ void start_capture() {
 }
 
 void printRGB(String hexcode) {
-  if (hexcode[0] == '#') hexcode.erase(hexcode.begin());
-  int strLength = hexcode.size();
+  int strLength = hexcode.length();
 
   if (strLength > 6) return;
 
   String colors[3] = { "00", "00", "00" };
-  int j = 0;
-  for(int i = 0; i < strLength; i = i + 2)
+  int j = 1;
+  for(int i = 0; i <= strLength; i = i + 2)
   {
-    colors[j].at(0) = hexcode[i];
-    colors[j].at(1) = hexcode[i + 1];
+    colors[j][0] = hexcode[i];
+    colors[j][1] = hexcode[i + 1];
     j += 1;
   }
 
-  std::cout << colors[0] << std::endl;
-  std::cout << colors[1] << std::endl;
-  std::cout << colors[2] << std::endl;
+//  String.println(colors[0]);
+//  String.println(colors[1]);
+//  String.println(colors[2]);
 
-  int colorsHEXNUMS[3];
+
   for (int i= 0; i < 3; i++)
   {
-      colorsHEXNUMS[i] = std::stoi(colors[i], 0, 16);
+      //colorsHEXNUMS[i] = strtol(colors[i], 0, 16);
+      colorsHEXNUMS[i] = colors[i].toInt();
   }
 
-   // diff logic
-   analogWrite(RED_PIN, colorsHEXNUMS[0]);
-   analogWrite(GREEN_PIN, colorsHEXNUMS[1]);
-   analogWrite(BLUE_PIN, colorsHEXNUMS[2]);
 }
 
 void sendData(uint8_t * payload, size_t len) {
   Serial.print(F("About to send data to server, len: "));
   Serial.println(len);
   HTTPClient http;
+
+  http.setTimeout(120000);
 
   http.begin("http://hat-or-not.helpfulseb.com:8080/ingest/outfit"); 
   http.addHeader("Content-Type", "Content-Type: image/jpeg"); 
@@ -113,7 +115,7 @@ void sendData(uint8_t * payload, size_t len) {
     DynamicJsonDocument doc(capacity);
 
     // Parse JSON object
-    DeserializationError error = deserializeJson(doc, client);
+    DeserializationError error = deserializeJson(doc, response);
       if (error) {
         Serial.print(F("deserializeJson() failed: "));
         Serial.println(error.f_str());
@@ -281,12 +283,39 @@ void setup() {
   }
   Serial.print(F("WiFi connected: "));
   Serial.println(WiFi.localIP());
+
+const int freq = 5000;
+const int ledChannel = 0;
+const int resolution = 8;
+
+    // configure LED PWM functionalitites
+  ledcSetup(ledChannel, freq, resolution);
+  
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(RED_PIN, ledChannel);
+
+    ledcSetup(1, freq, resolution);
+  
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(GREEN_PIN, 1);
+
+    ledcSetup(2, freq, resolution);
+  
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(BLUE_PIN, 2);
+  
+    ledcWrite(RED_PIN, 255);
+    ledcWrite(GREEN_PIN, 255);
+    ledcWrite(BLUE_PIN, 255);
 }
 
 void loop() {
   if (digitalRead(INPUT_BTN)) {
     Serial.println(F("Capturing and sending..."));
     camCapture(myCAM);
+    ledcWrite(RED_PIN, colorsHEXNUMS[0]);
+    ledcWrite(GREEN_PIN, colorsHEXNUMS[1]);
+    ledcWrite(BLUE_PIN, colorsHEXNUMS[2]);
     delay(500);
   }
   delay(1000);
